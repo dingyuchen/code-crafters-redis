@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <arpa/inet.h>
 #include <cstddef>
 #include <cstdlib>
@@ -57,6 +58,7 @@ int main(int argc, char **argv) {
   struct sockaddr_in client_addr;
   int client_addr_len = sizeof(client_addr);
 
+  std::vector<std::future<void>> futures;
   while (true) {
     std::cout << "Waiting for a client to connect...\n";
     int client_socket = accept(server_fd, (struct sockaddr *)&client_addr,
@@ -69,6 +71,7 @@ int main(int argc, char **argv) {
         send(client_socket, pong.data(), pong.size(), 0);
       }
     }, client_socket);
+    futures.push_back(std::move(f));
   }
 
   close(server_fd);
