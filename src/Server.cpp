@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <future>
 #include <iostream>
 #include <netdb.h>
 #include <string>
@@ -56,20 +57,20 @@ int main(int argc, char **argv) {
   struct sockaddr_in client_addr;
   int client_addr_len = sizeof(client_addr);
 
-  std::cout << "Waiting for a client to connect...\n";
-
-  int client_socket = accept(server_fd, (struct sockaddr *)&client_addr,
-         (socklen_t *)&client_addr_len);
-  std::cout << "Client connected\n";
-  
-  std::vector<std::byte> buffer{1024};
-  while (recv(client_socket, buffer.data(), buffer.size(), 0)) {
-    std::cout << "received something" << std::endl;
-    static const std::string pong = "+PONG\r\n";
-    send(client_socket, pong.data(), pong.size(), 0);
+  while (true) {
+    std::cout << "Waiting for a client to connect...\n";
+    int client_socket = accept(server_fd, (struct sockaddr *)&client_addr,
+                               (socklen_t *)&client_addr_len);
+    std::cout << "Client connected\n";
+    auto f = std::async(std::launch::async, [](int client_socket) {
+      std::vector<std::byte> buffer{1024};
+      while (recv(client_socket, buffer.data(), buffer.size(), 0)) {
+        static const std::string pong = "+PONG\r\n";
+        send(client_socket, pong.data(), pong.size(), 0);
+      }
+    }, client_socket);
   }
 
   close(server_fd);
-
   return 0;
 }
