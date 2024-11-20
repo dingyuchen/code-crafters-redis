@@ -6,11 +6,14 @@
 #include <future>
 #include <iostream>
 #include <netdb.h>
+#include <sstream>
 #include <string>
+#include <sys/_types/_ssize_t.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <vector>
+#include "Handler.cpp"
 
 int main(int argc, char **argv) {
   // Flush after every std::cout / std::cerr
@@ -65,11 +68,8 @@ int main(int argc, char **argv) {
                                (socklen_t *)&client_addr_len);
     std::cout << "Client connected\n";
     auto f = std::async(std::launch::async, [](int client_socket) {
-      std::vector<std::byte> buffer{1024};
-      while (recv(client_socket, buffer.data(), buffer.size(), 0)) {
-        static const std::string pong = "+PONG\r\n";
-        send(client_socket, pong.data(), pong.size(), 0);
-      }
+        Handler h(client_socket);
+        h.handle();
     }, client_socket);
     futures.push_back(std::move(f));
   }
