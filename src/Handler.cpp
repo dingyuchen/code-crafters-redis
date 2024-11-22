@@ -3,7 +3,6 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <sys/_types/_ssize_t.h>
 #include <sys/socket.h>
 #include <vector>
 
@@ -48,7 +47,7 @@ private:
 
     std::stringstream out;
     if (strings.front() == "ECHO") {
-      resp(out, strings.back());
+      resp(out, strings.back(), strings.size());
     } else {
       resp(out, "PONG");
     }
@@ -91,7 +90,7 @@ public:
 
   void handle() {
     std::array<std::byte, 1024> buffer{};
-    while (ssize_t size =
+    while (size_t size =
                recv(_client_socket, buffer.data(), buffer.size(), 0)) {
       std::stringstream ss{};
       for (size_t i = 0; i < size; i++) {
