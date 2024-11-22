@@ -97,9 +97,9 @@ private:
     for (; it != req.end(); it++) {
       std::transform(it->begin(), it->end(), it->begin(), ::toupper);
       if ("NX" == *it) {
-
+        // TODO
       } else if ("XX" == *it) {
-
+        // TODO
       } else if ("EX" == *it) {
         it++;
         uint64_t s = folly::to<uint64_t>(*it);
@@ -119,7 +119,7 @@ private:
 
   void resp(std::stringstream &out, const BulkString &bulk_string) {
     if (bulk_string.body.empty()) {
-      out << '-' << "\r\n";
+      out << "$-1\r\n";
       return;
     }
     out << '$';

@@ -31,7 +31,8 @@ public:
     const auto expire = start + std::chrono::milliseconds(ms);
     auto res = map.try_emplace(key, value, expire);
     if (!res.second) {
-        res = map.insert_or_assign(key, Value{value, expire});
+      // will update the existing value
+      res = map.insert_or_assign(key, Value{value, expire});
     }
     return res.second;
   }
