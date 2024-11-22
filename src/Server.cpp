@@ -5,6 +5,7 @@
 #include <cstring>
 #include <future>
 #include <iostream>
+#include <memory>
 #include <netdb.h>
 #include <sstream>
 #include <string>
@@ -13,6 +14,7 @@
 #include <unistd.h>
 #include <vector>
 #include "Handler.cpp"
+#include "Storage.cpp"
 
 int main(int argc, char **argv) {
   // Flush after every std::cout / std::cerr
@@ -61,13 +63,14 @@ int main(int argc, char **argv) {
   int client_addr_len = sizeof(client_addr);
 
   std::vector<std::future<void>> futures;
+  std::shared_ptr<Storage> store = std::make_shared<Storage>();
   while (true) {
     std::cout << "Waiting for a client to connect...\n";
     int client_socket = accept(server_fd, (struct sockaddr *)&client_addr,
                                (socklen_t *)&client_addr_len);
     std::cout << "Client connected\n";
-    auto f = std::async(std::launch::async, [](int client_socket) {
-        Handler h(client_socket);
+    auto f = std::async(std::launch::async, [=](int client_socket) {
+        Handler h{client_socket, store};
         h.handle();
     }, client_socket);
     futures.push_back(std::move(f));
