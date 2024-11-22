@@ -1,9 +1,12 @@
 #pragma once
 
 #include "Storage.cpp"
+#include <algorithm>
 #include <array>
+#include <cctype>
 #include <cstddef>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -63,17 +66,12 @@ private:
     }
 
     std::stringstream out;
+    std::transform(strings.front().begin(), strings.front().end(),
+                   strings.front().begin(), ::toupper);
     if (strings.front() == "ECHO") {
       resp(out, BulkString{strings.back()});
     } else if (strings.front() == "SET") {
-      std::string &key = strings[1];
-      std::string &value = strings[2];
-      bool ret = _storage->set(key, value);
-      if (ret) {
-        resp(out, SimpleString{"OK"});
-      } else {
-        resp(out, SimpleError{"FAILED"});
-      }
+      handle_set_command(strings, out);
     } else if (strings.front() == "GET") {
       std::string &key = strings.back();
       const auto &[found, value] = _storage->get(key);
@@ -85,6 +83,38 @@ private:
     std::string res = out.str();
     send(_client_socket, res.data(), res.size(), 0);
     return {};
+  }
+
+  void handle_set_command(std::vector<std::string> &req,
+                          std::stringstream &out) {
+    std::string &key = req[1];
+    std::string &value = req[2];
+    auto it = std::next(req.begin(), 3);
+    bool ok;
+    if (it == req.end()) {
+      ok = _storage->set(key, value );
+    }
+    for (; it != req.end(); it++) {
+      std::transform(it->begin(), it->end(), it->begin(), ::toupper);
+      if ("NX" == *it) {
+
+      } else if ("XX" == *it) {
+
+      } else if ("EX" == *it) {
+        it++;
+        uint64_t s = folly::to<uint64_t>(*it);
+        ok = _storage->set(key, value, s * 1000);
+      } else if ("PX" == *it) {
+        it++;
+        uint64_t ms = folly::to<uint64_t>(*it);
+        ok = _storage->set(key, value, ms);
+      }
+    }
+    if (ok) {
+      resp(out, SimpleString{"OK"});
+    } else {
+      resp(out, SimpleError{"FAILED"});
+    }
   }
 
   void resp(std::stringstream &out, const BulkString &bulk_string) {
