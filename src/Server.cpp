@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <arpa/inet.h>
+#include <chrono>
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
@@ -13,8 +14,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <vector>
-#include "Handler.cpp"
-#include "Storage.cpp"
+#include "Handler.h"
+#include "Storage.h"
 
 int main(int argc, char **argv) {
   // Flush after every std::cout / std::cerr
@@ -62,7 +63,7 @@ int main(int argc, char **argv) {
   struct sockaddr_in client_addr;
   int client_addr_len = sizeof(client_addr);
 
-  std::vector<std::future<void>> futures;
+  std::deque<std::future<void>> futures;
   std::shared_ptr<Storage> store = std::make_shared<Storage>();
   while (true) {
     std::cout << "Waiting for a client to connect...\n";
@@ -74,6 +75,10 @@ int main(int argc, char **argv) {
         h.handle();
     }, client_socket);
     futures.push_back(std::move(f));
+    while (futures.front().wait_until(std::chrono::steady_clock::time_point::min()) == std::future_status::ready) {
+      std::cout << "Completed\n";
+      futures.pop_front();
+    }
   }
 
   close(server_fd);
