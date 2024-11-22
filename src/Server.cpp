@@ -8,7 +8,6 @@
 #include <netdb.h>
 #include <sstream>
 #include <string>
-#include <sys/_types/_ssize_t.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>

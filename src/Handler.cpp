@@ -6,6 +6,14 @@
 #include <sys/socket.h>
 #include <vector>
 
+struct SimpleString {
+  std::string body;
+};
+
+struct BulkString {
+  std::string body;
+};
+
 class Handler {
 private:
   int _client_socket;
@@ -26,8 +34,8 @@ private:
     }
     return {};
   }
-  
-  void read_delim(std::stringstream& ss) {
+
+  void read_delim(std::stringstream &ss) {
     char c[2];
     ss.read(c, 2);
   }
@@ -47,27 +55,27 @@ private:
 
     std::stringstream out;
     if (strings.front() == "ECHO") {
-      resp(out, strings.back(), strings.size());
+      resp(out, BulkString{strings.back()});
     } else {
-      resp(out, "PONG");
+      resp(out, SimpleString{"PONG"});
     }
 
     std::string res = out.str();
     send(_client_socket, res.data(), res.size(), 0);
     return strings;
   }
-  
+
   // to overload between bulkstring and simple strings
-  void resp(std::stringstream& out, const std::string& bulk_string, size_t size) {
+  void resp(std::stringstream &out, const BulkString &bulk_string) {
     out << '$';
-    out << size << "\r\n";
-    out << bulk_string;
+    out << bulk_string.body.size() << "\r\n";
+    out << bulk_string.body;
     out << "\r\n";
   }
-  
-  void resp(std::stringstream& out, const std::string& simple_string) {
+
+  void resp(std::stringstream &out, const SimpleString &simple_string) {
     out << '+';
-    out << simple_string << "\r\n";
+    out << simple_string.body << "\r\n";
   }
 
   std::vector<std::string> handle_bulk_string(std::stringstream &ss) {
